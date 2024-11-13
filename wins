@@ -1,0 +1,115 @@
+#!/usr/bin/python
+import os
+import sys
+import time
+from termcolor import colored
+
+def header(text, all=None, inner=None, outer=None):
+    j = "+-"
+    for i in text: j += "-"
+    j += "-+"
+
+    if all is not None or inner is not None:
+        text = colored(text, inner if all is None else all)
+
+    if all is not None or outer is not None:
+        j = colored(j, outer if all is None else all) 
+        k = colored("|", outer if all is None else all) 
+
+    print(j)
+    print(f"{k} {text} {k}")
+    print(j)
+
+def main(Root):
+    Tree = dict()
+
+    #i = 0
+    for r, d, f in os.walk(Root):
+        Tree[r] = {0:d, 1:f}
+        #i += 1
+
+    k = Root
+    err = 0
+    while True:
+        mapping = dict()
+        i = 0
+
+        # directories / topics
+        if len(Tree[k][0]):
+            header("Topics", inner="yellow", outer="red")
+            for i, s in enumerate(Tree[k][0], start=1):
+                ii = colored(i, "blue")
+                print(f"  {ii}: {s}")
+                mapping[i] = s
+
+        print()
+
+        # files / actual work instructions
+        if len(Tree[k][1]):
+            header("Instructions", inner="yellow", outer="red")
+            for i, t in enumerate(Tree[k][1], start=i+1):
+                ii = colored(i, "blue")
+                print(f"  {ii}: {t}")
+                mapping[i] = t
+
+        print()
+        header("q(uit), r(eturn [one level back]), m(ain menu)", inner="yellow", outer="red")
+        p = colored("  pick: ", "blue")
+        pick = input(p)
+        print(pick)
+
+        if pick in ("q", "quit"):
+            sys.exit(0)
+
+        if pick in ("r", "return"):
+            if k == Root: continue
+
+            # strip last part of path
+            # /one/two/three"/last" 
+            k = "/".join( k.split("/")[:-1] )
+            continue
+
+        if pick in ("m", "main", "main menu"):
+            k = Root
+            continue
+
+        try:
+            pick = int(pick)
+        except ValueError:
+            pick = "'none'"
+
+        try:
+            mapping[pick]
+            err = 0
+        except KeyError:
+            print(f"Invalid option: {pick}")
+
+            err += 1
+            if err == 3:
+                print("!!! PBKAC error, good bye..")
+                sys.exit(127)
+
+            continue
+
+        p = f"{k}/{mapping[pick]}"
+        if os.path.isfile(p):
+            print("\n============ Content start =============\n")
+
+            try:
+                with open(p, "r") as fh:
+                    for l in fh.readlines():
+                        l = l.replace("\n", "")
+                        print(l)
+            except OSError:
+                print(f"Could not open file: {p}")
+                sys.exit(1)
+
+            print("\n============= Content end ==============\n")
+            z = input("Press <enter> to continue..")
+        else:
+            k = p
+
+
+
+if __name__ == "__main__":
+    main("/home/vella/work-instructions")
