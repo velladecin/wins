@@ -1,8 +1,82 @@
 #!/usr/bin/python
+import argparse
 import os
 import sys
 import time
+import re
 from termcolor import colored
+
+CONFIG = ["~/.config/wins.cfg", "/etc/wins/wins.cfg"]
+
+class Cfg(object):
+    __empty = re.compile(r'^\s*$')
+    __comment = re.compile(r'^#')
+
+    __path = os.environ["HOME"] + "/work-instructions"
+    __separator = "=============== CONTENT ==============="
+
+    # splitter refers to char between opt/val
+    # eg: path = /your/path
+
+    def __init__(self, config, splitter="="):
+        if isinstance(config, str):
+            # config explicitly given
+            # make it a list
+            config = [config]
+
+        if not isinstance(config, list):
+            print(f"ERROR: Invalid config file: {config}")
+            print(config)
+            sys.exit(127)
+
+        self.path = None
+        self.separator = None
+
+        for c in config:
+            try:
+                with open(c, 'r') as fh:
+                    for line in (fh.read().splitlines()):
+                        if self.__empty.match(line): continue
+                        if self.__comment.match(line): continue
+
+                        # first occurrence of separator, separates opt/value
+                        # where value can still contain an instance of the separator (if needed)
+
+                        fields = line.split(splitter, 1)
+                        if len(fields) != 2:
+                            print(f"ERROR: Invalid config line: {line}")
+                            sys.exit(1)
+
+                        opt = self.__trim(fields[0])
+                        val = self.__trim(fields[1])
+
+                        if opt == "path": self.path = val
+                        if opt == "separator": self.separator = val
+
+                # first successful config
+                # is accepted
+                if self.path is not None and self.separator is not None:
+                    break
+
+            except FileNotFoundError:
+                pass
+
+        warn = False
+        if self.path is None:
+            print(f"No wins path set, using default: {self.__path}")
+            warn = True
+            self.path = self.__path
+
+        if self.separator is None:
+            print(f"No wins separator set, using default: {self.__separator}")
+            warn = True
+            self.separator = self.__separator
+
+        if warn: print()
+
+    def __trim(self, val):
+        val = re.sub(r'^\s+', "", val)
+        return re.sub(r'\s+$', "", val)
 
 def header(text, all=None, inner=None, outer=None):
     j = "+-"
@@ -20,15 +94,14 @@ def header(text, all=None, inner=None, outer=None):
     print(f"{k} {text} {k}")
     print(j)
 
-def main(Root):
+def main(config):
+    cfg = Cfg(config)
+
     Tree = dict()
-
-    #i = 0
-    for r, d, f in os.walk(Root):
+    for r, d, f in os.walk(cfg.path):
         Tree[r] = {0:d, 1:f}
-        #i += 1
 
-    k = Root
+    k = cfg.path
     err = 0
     while True:
         mapping = dict()
@@ -62,7 +135,7 @@ def main(Root):
             sys.exit(0)
 
         if pick in ("r", "return"):
-            if k == Root: continue
+            if k == cfg.path: continue
 
             # strip last part of path
             # /one/two/three"/last" 
@@ -70,7 +143,7 @@ def main(Root):
             continue
 
         if pick in ("m", "main", "main menu"):
-            k = Root
+            k = cfg.path
             continue
 
         try:
@@ -93,7 +166,7 @@ def main(Root):
 
         p = f"{k}/{mapping[pick]}"
         if os.path.isfile(p):
-            print("\n============ Content start =============\n")
+            print(f"\nSTART: {cfg.separator}\n")
 
             try:
                 with open(p, "r") as fh:
@@ -104,12 +177,20 @@ def main(Root):
                 print(f"Could not open file: {p}")
                 sys.exit(1)
 
-            print("\n============= Content end ==============\n")
+            print(f"\nEND: {cfg.separator}\n")
             z = input("Press <enter> to continue..")
         else:
             k = p
 
-
-
 if __name__ == "__main__":
-    main("/home/vella/work-instructions")
+    p = argparse.ArgumentParser(
+        prog = "wins",
+        description = "Simple work instructions reader and displayer",
+        epilog = "-- velladecin")
+
+    p.add_argument("-c", "--cfg", "--config",
+        default = CONFIG,
+        help = "Location of disk config, default: " + ", ".join(CONFIG))
+
+    args = p.parse_args()
+    main(args.cfg)
