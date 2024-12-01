@@ -5,6 +5,7 @@ import sys
 import time
 import re
 from termcolor import colored
+from pprint import pprint
 
 CONFIG = ["~/.config/wins.cfg", "/etc/wins/wins.cfg"]
 
@@ -53,6 +54,11 @@ class Cfg(object):
                         if opt == "path": self.path = val
                         if opt == "separator": self.separator = val
 
+                # update ~, ~/
+                if self.path is not None:
+                    if re.match(r'^~', self.path):
+                        self.path = re.sub(r'~/?', f"{os.environ['HOME']}/", self.path)
+
                 # first successful config
                 # is accepted
                 if self.path is not None and self.separator is not None:
@@ -73,6 +79,11 @@ class Cfg(object):
             self.separator = self.__separator
 
         if warn: print()
+
+        # now check if path exists
+        if not os.path.isdir(self.path):
+            print(f"ERROR: Path does not exist or is not dir: {self.path}")
+            sys.exit(2)
 
     def __trim(self, val):
         val = re.sub(r'^\s+', "", val)
