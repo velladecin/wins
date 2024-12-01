@@ -89,6 +89,9 @@ class Cfg(object):
         val = re.sub(r'^\s+', "", val)
         return re.sub(r'\s+$', "", val)
 
+
+#############
+
 def header(text, all=None, inner=None, outer=None):
     j = "+-"
     for i in text: j += "-"
