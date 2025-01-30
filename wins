@@ -4,8 +4,14 @@ import os
 import sys
 import time
 import re
+import random
 from termcolor import colored
 from pprint import pprint
+
+class WinsError(Exception):
+    def __init__(self, msg):
+        super(WinsError, self).__init__(msg)
+
 
 CONFIG = ["~/.config/wins.cfg", "/etc/wins/wins.cfg"]
 
@@ -206,5 +212,23 @@ if __name__ == "__main__":
         default = CONFIG,
         help = "Location of disk config, default: " + ", ".join(CONFIG))
 
+    p.add_argument("-p", "--pwdgen",
+        type=int,
+        help = "Create password of length PWDGEN")
+
     args = p.parse_args()
+
+    if not args.pwdgen is None:
+        if args.pwdgen < 4:
+            raise WinsError(f"Baad password length: {args.pwdgen}")
+
+        if args.pwdgen < 8:
+            print(f"WARNING: Password length is unsafe: {args.pwdgen}")
+
+        pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^()-_+=[]{}'
+        pwd = ''.join((random.choice(pool) for i in range(args.pwdgen)))
+        print(f"PWD: {pwd}")
+
+        sys.exit(0)
+
     main(args.cfg)
