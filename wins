@@ -22,7 +22,7 @@ class Cfg(object):
     __path = os.environ["HOME"] + "/work-instructions"
     __separator = "=============== CONTENT ==============="
 
-    # splitter refers to char between opt/val
+    # splitter refers to a char between opt/val
     # eg: path = /your/path
 
     def __init__(self, config, splitter="="):
@@ -97,6 +97,17 @@ class Cfg(object):
 
 
 #############
+
+def passwd(length):
+    if length < 4:
+        raise WinsError(f"Baad password length: {args.pwdgen}")
+
+    if length < 8:
+        print(f"WARNING: Password length is unsafe: {args.pwdgen}")
+
+    pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^()-_+=[]{}'
+    pwd = ''.join((random.choice(pool) for i in range(length)))
+    print(f"PWD: {pwd}")
 
 def header(text, all=None, inner=None, outer=None):
     j = "+-"
@@ -218,17 +229,8 @@ if __name__ == "__main__":
 
     args = p.parse_args()
 
-    if not args.pwdgen is None:
-        if args.pwdgen < 4:
-            raise WinsError(f"Baad password length: {args.pwdgen}")
-
-        if args.pwdgen < 8:
-            print(f"WARNING: Password length is unsafe: {args.pwdgen}")
-
-        pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^()-_+=[]{}'
-        pwd = ''.join((random.choice(pool) for i in range(args.pwdgen)))
-        print(f"PWD: {pwd}")
-
+    if args.pwdgen:
+        passwd(args.pwdgen)
         sys.exit(0)
 
     main(args.cfg)
